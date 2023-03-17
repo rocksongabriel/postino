@@ -1,99 +1,70 @@
-import Head from 'next/head'
-import clientPromise from '../lib/mongodb'
-import { InferGetServerSidePropsType } from 'next'
+import Head from "next/head";
+import clientPromise from "../lib/mongodb";
+import { InferGetServerSidePropsType } from "next";
+import { Inter } from "next/font/google";
 
-export async function getServerSideProps(context) {
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--inter-font",
+});
+
+export async function getServerSideProps() {
   try {
-    await clientPromise
-    // `await clientPromise` will use the default database passed in the MONGODB_URI
-    // However you can use another database (e.g. myDatabase) by replacing the `await clientPromise` with the following code:
-    //
-    // `const client = await clientPromise`
-    // `const db = client.db("myDatabase")`
-    //
-    // Then you can execute queries against your database like so:
-    // db.find({}) or any of the MongoDB Node Driver commands
+    await clientPromise;
+    const client = await clientPromise;
+    const db = client.db("VolatilityRed");
+
+    const vr_articles = await db
+      .collection("volatility_red_blog_posts")
+      .find({})
+      .toArray();
 
     return {
-      props: { isConnected: true },
-    }
+      props: {
+        isConnected: true,
+        data: vr_articles.map((item) => {
+          return {
+            id: item._id.toString(),
+            title: item.article_title,
+            link: item.link_to_page,
+          };
+        }),
+      },
+    };
   } catch (e) {
-    console.error(e)
+    console.error(e);
     return {
       props: { isConnected: false },
-    }
+    };
   }
 }
 
 export default function Home({
   isConnected,
+  data,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <div className="container">
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>FX Articles</title>
       </Head>
 
       <main>
-        <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Next.js with MongoDB!</a>
-        </h1>
+        <h1 className="title">{isConnected && data?.length} Articles</h1>
 
-        {isConnected ? (
-          <h2 className="subtitle">You are connected to MongoDB</h2>
-        ) : (
-          <h2 className="subtitle">
-            You are NOT connected to MongoDB. Check the <code>README.md</code>{' '}
-            for instructions.
-          </h2>
-        )}
+        {isConnected &&
+          data?.map((article) => (
+            <a href={article.link} target="_blank" rel="noopener noreferrer">
+              <p className="description">{article.title}</p>
+            </a>
+          ))}
 
-        <p className="description">
-          Get started by editing <code>pages/index.js</code>
-        </p>
-
-        <div className="grid">
-          <a href="https://nextjs.org/docs" className="card">
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className="card">
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className="card"
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="card"
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        {!isConnected && <h1>Server Down, Sorry!</h1>}
       </main>
 
       <footer>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className="logo" />
+        <a href="#" rel="noopener noreferrer">
+          Powered by Gabriel Rockson
         </a>
       </footer>
 
@@ -108,7 +79,7 @@ export default function Home({
         }
 
         main {
-          padding: 5rem 0;
+          padding: 1rem 0 4rem 0;
           flex: 1;
           display: flex;
           flex-direction: column;
@@ -153,12 +124,13 @@ export default function Home({
 
         .title {
           margin: 0;
-          line-height: 1.15;
-          font-size: 4rem;
+          line-height: 2;
+          font-size: 3rem;
         }
 
         .title,
         .description {
+          color: white;
           text-align: center;
         }
 
@@ -167,68 +139,18 @@ export default function Home({
         }
 
         .description {
-          line-height: 1.5;
-          font-size: 1.5rem;
+          line-height: 1.1;
+          font-size: 1.4rem;
         }
 
-        code {
-          background: #fafafa;
-          border-radius: 5px;
-          padding: 0.75rem;
-          font-size: 1.1rem;
-          font-family: Menlo, Monaco, Lucida Console, Liberation Mono,
-            DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
-        }
-
-        .grid {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-wrap: wrap;
-
-          max-width: 800px;
-          margin-top: 3rem;
-        }
-
-        .card {
-          margin: 1rem;
-          flex-basis: 45%;
-          padding: 1.5rem;
-          text-align: left;
-          color: inherit;
-          text-decoration: none;
-          border: 1px solid #eaeaea;
-          border-radius: 10px;
-          transition: color 0.15s ease, border-color 0.15s ease;
-        }
-
-        .card:hover,
-        .card:focus,
-        .card:active {
+        .description:hover {
           color: #0070f3;
-          border-color: #0070f3;
-        }
-
-        .card h3 {
-          margin: 0 0 1rem 0;
-          font-size: 1.5rem;
         }
 
         .card p {
           margin: 0;
           font-size: 1.25rem;
           line-height: 1.5;
-        }
-
-        .logo {
-          height: 1em;
-        }
-
-        @media (max-width: 600px) {
-          .grid {
-            width: 100%;
-            flex-direction: column;
-          }
         }
       `}</style>
 
@@ -237,9 +159,9 @@ export default function Home({
         body {
           padding: 0;
           margin: 0;
-          font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
-            Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue,
-            sans-serif;
+          background: black;
+          color: #f0ead6;
+          font-family: var(--inter-font);
         }
 
         * {
@@ -247,5 +169,5 @@ export default function Home({
         }
       `}</style>
     </div>
-  )
+  );
 }
